@@ -1,0 +1,95 @@
+* Artificial life simulator
+
+
+* Simulation rules
+
+In this scenario, animals with random characteristics are spawned on a
+habitat. They can interact among each other and their main objective
+is to reproduce. Animals will have to deal with hunger in order to
+survive.
+
+Animals have Health Points (HP), HP will be lowered when being
+attacked or being hungry. If HP drops to 0, the animal will die.
+
+** Energy and food
+
+Animals spend their energy by existing. Moreover, doing specific
+actions (walking, running, attacking) will drain their energy as
+well. Animals can restore energy by sleeping. There is an energy cap
+which is a function of an animals /hunger level/. If an animal's
+energy becomes too low, a constant damage will be inflicted.
+
+An animal can consume food from different sources. Each animal can
+have either a combination hervivorous or carnivorous diets. Their
+bodies can be mutated in order to better extract energy from their
+food depending on their type (plant or meat). There will always be a
+trade-off for plant-meat optimization (an animal can't be /very/ good
+at eating both plants and meat).
+
+When eating, an animal's energy cap increases. Its energy increases as
+well.
+
+Plant cells spawn in groups on certain parts of the habitat in a
+periodic basis, an animal can consume them by getting close to them
+and spending time there. The more time an animal spends eating a cell,
+the smaller the latter becomes until it is consumed.
+
+** Genetic material and reproduction
+
+Animals are considered of the same species if they share some
+configurable percentage of their /generic material/. Genetic material
+will be represented by a DNA string (eg. "AAGATGCCGT").
+
+If an animal's energy level is above a threshold, it can reproduce.
+All animals reproduce sexually. Or rather, in order to reproduce, they
+need another one of their species
+  
+Any number of children can be born at once from a couple, but the
+energy cost of having $n$ childrens grows in $O\left( e^n \right)$
+
+A child's genetic material will be based off of its parents. Each
+character of the DNA string will come from of their parents at random.
+
+Each child will randomly mutate its genetic material. This will enable
+species to evolve over time, in the same way that real world evolution
+works.
+
+* Animal characteristics
+
+All animal characteristics are derived from their genetic
+material. And all characteristics involves /all/ characteristics, from
+body parts, to maximum HP and behaviour.
+
+** Body parts
+
+An animal can have many body parts (the general utility of each part
+is fixed), an animal can have any of these parts and any number of
+them.
+
+If an animal has $n$ body parts of the same type, the idle energy cost
+(energy spend just by existing) will increase in $O(e^n)$.
+
+*** Legs
+
+Legs allow an animal to move through the world. Stronger legs allow an
+animal to mover faster. More legs allow for more granular
+movement. Stronger legs consume more energy, specially while moving.
+
+*** Eyes
+
+They allow an animal to perceive the world around them. They have some
+range, which means animals can only see up to some distance, this
+distance can vary, but "better eyes" consume more energy. An animal
+can have many eyes.
+
+*** Behaviour
+
+Animals can have different responses to stimuli. They could either
+only react to immediate stimuli, like running from an attacking
+animal, or searching for food when hungry.
+
+Over time, animals could evolve to have a more "intelligent
+behaviour", like searching for food before they are hungry, prefering
+to eat in more isolated places, wanting to form groups.
+
+More intelligent animals spend more energy when making think.
