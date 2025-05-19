@@ -1,0 +1,25 @@
+package game
+
+type TurningStates uint8
+
+const (
+	LEFT TurningStates = iota
+	RIFGHT
+	STRAIGHT
+)
+
+type Animal struct {
+	x    float64
+	y    float64
+	dirX float64
+	dirY float64
+	speed float64
+	turning TurningStates
+}
+
+func (a *Animal) TurnDeltaLeft() {
+}
+
+func (a *Animal) Update() {
+
+}

@@ -1,0 +1,28 @@
+package network
+
+type Activation func(float64) float64
+
+type NeuronGene struct {
+	neuronId int
+	bias float64
+	activation Activation
+}
+
+type LinkId struct {
+	inputId int
+	outputId int
+}
+
+type LinkGene struct {
+	linkId LinkId
+	weight float64
+	isEnabled bool
+}
+
+type Genome struct {
+	genomeId int
+	numInputs int
+	numOutputs int
+	neurons []NeuronGene
+	links []LinkGene
+}

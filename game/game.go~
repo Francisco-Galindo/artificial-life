@@ -1,0 +1,9 @@
+package game
+
+type GameConfig struct {
+	ticksPerSecond int
+}
+
+func InitGameConfig() GameConfig {
+	return GameConfig{ticksPerSecond: 10}
+}
