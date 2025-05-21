@@ -15,6 +15,7 @@ type Food struct {
 	h             float64
 	fp            int
 	maxFp         int
+	ticksToRegrow int
 	sprites       []*pixel.Sprite
 	currSpriteIdx int
 	mu            sync.Mutex
@@ -68,6 +69,8 @@ func (f *Food) Eeat() int {
 		f.fp--
 		if f.fp == 0 {
 			f.currSpriteIdx = 1
+			f.ticksToRegrow = Game.TicksPerSecond * 30
+			FoodBlocksToGrow = append(FoodBlocksToGrow, f)
 		}
 		fpEaten = 1
 	}

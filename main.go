@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"image"
 	"math"
-	"math/rand"
 	"os"
+	"sync"
 	"time"
 
 	"example.com/artificial-life/game"
@@ -106,26 +106,25 @@ func run() {
 			food.GetCurrSprite().Draw(win, mat)
 		}
 
+		if shouldUpdate {
+			sum := 0
+			wg := new(sync.WaitGroup)
+			for _, animal := range game.Animals {
+				wg.Add(1)
+				sum += animal.GetNumberOfNeurons()
+				go animal.Update(wg)
+			}
+			wg.Wait()
+			fmt.Println(sum, float64(sum) / float64(len(game.Animals)))
+		}
+
 		for _, animal := range game.Animals {
 
-			var dx, dy float64
-			if shouldUpdate {
-				x := rand.Float64()
-				if x < 0.33 {
-					animal.SetTurningState(game.LEFT)
-				} else if x < 0.75 {
-					animal.SetTurningState(game.RIGHT)
-				} else {
-					animal.SetTurningState(game.STRAIGHT)
-				}
-
-				animal.Update()
-			}
-
 			tickProportion := float64(last.Sub(lastTick)) / float64(tickDuration)
+			var dx, dy float64
 
-			dx = math.Cos(animal.GetTheta()) * animal.GetSpeed() * float64(1/float64(game.Game.TicksPerSecond)) * tickProportion
-			dy = math.Sin(animal.GetTheta()) * animal.GetSpeed() * float64(1/float64(game.Game.TicksPerSecond)) * tickProportion
+			dx = math.Cos(animal.GetTheta()) * animal.GetSpeed() * float64(1/float64(20.0)) * tickProportion
+			dy = math.Sin(animal.GetTheta()) * animal.GetSpeed() * float64(1/float64(20.0)) * tickProportion
 
 			x, y := animal.GetPos()
 
@@ -148,6 +147,7 @@ func run() {
 
 		if shouldUpdate {
 			game.PruneDeadAnimals()
+			game.RegrowPlants()
 		}
 
 		win.Update()

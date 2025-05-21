@@ -17,23 +17,34 @@ type GameConfig struct {
 
 var Game GameConfig
 var Animals []*Animal
+var newAnimals []*Animal
 var FoodBlocks = make(map[int]*Food)
+var FoodBlocksToGrow []*Food
 var Squares []pixel.Vec
 
 func HashCoords(x, y float64) int {
-	return int(x) * 100_000 + int(y)
+	return int(x)*100_000 + int(y)
 }
 
 func InitGameConfig() {
-	Game = GameConfig{TicksPerSecond: 20}
-	Animals = append(Animals, InitAnimal())
+	Game = GameConfig{TicksPerSecond: 60}
 
-	for x := 0; x < 4096; x+=32 {
-	    for y := 0; y < 4096; y+=32 {
-		    if rand.Float64() < 0.05 {
-			    FoodBlocks[HashCoords(float64(x), float64(y))] = InitFood(float64(x), float64(y))
-		    }
-	    }
+	for x := 0; x < 4096; x += 32 {
+		for y := 0; y < 4096; y += 32 {
+			if rand.Float64() < 0.05 {
+				FoodBlocks[HashCoords(float64(x), float64(y))] = InitFood(float64(x), float64(y))
+			}
+			if rand.Float64() < 0.005 {
+				r := rand.Float64()
+				var animalType AnimalType
+				if r < 0.0 {
+					animalType = HUNTER
+				} else {
+					animalType = PREY
+				}
+				Animals = append(Animals, InitAnimal(float64(x), float64(y), animalType))
+			}
+		}
 	}
 }
 
@@ -51,9 +62,43 @@ func LoadPicture(path string) (pixel.Picture, error) {
 }
 
 func PruneDeadAnimals() {
-	for k, animal := range Animals {
-		if animal.GetHP() <= 0 {
+	for k := 0; k < len(Animals); k++ {
+		if Animals[k].GetHP() <= 0 {
+			if len(Animals) < 5 {
+				newAnimal := Animals[k].Copy()
+				newAnimal.TurnDelta(rand.NormFloat64() * math.Pi)
+				newAnimal.hp = 20
+				newAnimal.ticksUntilHurt = 100
+				newAnimal.ticksToAppear = Game.TicksPerSecond + 1
+				newAnimal.fitness = 0
+				newAnimal.fitnessGoal = Animals[k].fitness
+				newAnimal.brain.MutateHighVariability()
+
+				newAnimals = append(newAnimals, newAnimal)
+			}
 			Animals = append(Animals[:k], Animals[k+1:]...)
+		}
+	}
+
+	for k := 0; k < len(newAnimals); k++ {
+		animal := newAnimals[k]
+		animal.ticksToAppear--
+		if animal.ticksToAppear <= 0 {
+			Animals = append(Animals, animal)
+			newAnimals = append(newAnimals[:k], newAnimals[k+1:]...)
+		}
+	}
+}
+
+func RegrowPlants() {
+	for i := 0; i < len(FoodBlocksToGrow); i++ {
+		v := FoodBlocksToGrow[i]
+		v.ticksToRegrow--
+		if v.ticksToRegrow <= 0 {
+			v.currSpriteIdx = 0
+			v.fp = 1
+
+			FoodBlocksToGrow = append(FoodBlocksToGrow[:i], FoodBlocksToGrow[i+1:]...)
 		}
 	}
 }
