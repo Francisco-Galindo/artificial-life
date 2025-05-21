@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"math"
+	"math/rand"
 	"os"
 	"time"
 
@@ -16,11 +17,8 @@ import (
 	"golang.org/x/image/colornames"
 )
 
-var animals []*game.Animal
-
 func initProgram() {
 	game.InitGameConfig()
-	animals = append(animals, game.InitAnimal())
 }
 
 func loadPicture(path string) (pixel.Picture, error) {
@@ -48,53 +46,109 @@ func run() {
 	}
 	defer win.Destroy()
 
-
 	win.Clear(colornames.Skyblue)
+
+	var (
+		camPos       = pixel.ZV
+		camSpeed     = 500.0
+		baseCamSpeed     = 500.0
+		camZoom      = 1.0
+		camZoomSpeed = 1.2
+		// trees        []*pixel.Sprite
+		// matrices     []pixel.Matrix
+	)
 
 	angle := 0.0
 	last := time.Now()
 	lastTick := time.Now()
-	tickDuration := time.Duration(float64(1 / float64(game.Game.TicksPerSecond)) * float64(time.Second))
+	tickDuration := time.Duration(float64(1/float64(game.Game.TicksPerSecond)) * float64(time.Second))
+	camPos.X = 2048
+	camPos.Y = 2048
 
 	for !win.Closed() {
-		// dt := time.Since(last).Seconds()
+		cam := pixel.IM.Scaled(camPos, camZoom).Moved(win.Bounds().Center().Sub(camPos))
+		win.SetMatrix(cam)
+
+		dt := time.Since(last).Seconds()
 		last = time.Now()
 
-		win.Clear(colornames.Lightgreen)
+		shouldUpdate := false
+		if last.Sub(lastTick) >= tickDuration {
+			lastTick = lastTick.Add(tickDuration)
+			shouldUpdate = true
+		}
 
-		for _, animal := range(animals) {
-			lol := float64(last.Sub(lastTick)) / float64(tickDuration)
-			if last.Sub(lastTick) >= tickDuration {
-				// fmt.Println("UPDATE", float64(1.0 / float64(game.Game.TicksPerSecond) * float64(time.Second)) )
-				animal.Update()
+		camZoom *= math.Pow(camZoomSpeed, win.MouseScroll().Y)
+		camSpeed = baseCamSpeed / camZoom
 
-				if win.Pressed(pixel.KeyLeft) {
+		win.Clear(colornames.Forestgreen)
+
+		if win.Pressed(pixel.KeyDown) {
+			camPos.Y -= camSpeed * dt
+		}
+		if win.Pressed(pixel.KeyUp) {
+			camPos.Y += camSpeed * dt
+		}
+		if win.Pressed(pixel.KeyLeft) {
+			camPos.X -= camSpeed * dt
+		}
+		if win.Pressed(pixel.KeyRight) {
+			camPos.X += camSpeed * dt
+		}
+
+		for _, food := range game.FoodBlocks {
+
+			x, y := food.GetPos()
+			mat := pixel.IM
+			mat = mat.Rotated(pixel.ZV, angle)
+			mat = mat.Moved(pixel.Vec{X: x, Y: y})
+
+			food.GetCurrSprite().Draw(win, mat)
+		}
+
+		for _, animal := range game.Animals {
+
+			var dx, dy float64
+			if shouldUpdate {
+				x := rand.Float64()
+				if x < 0.33 {
 					animal.SetTurningState(game.LEFT)
-				} else if win.Pressed(pixel.KeyRight) {
+				} else if x < 0.75 {
 					animal.SetTurningState(game.RIGHT)
 				} else {
 					animal.SetTurningState(game.STRAIGHT)
 				}
-				lastTick = last
-			}
-			fmt.Println(math.Round(lol*100))
 
-			dx := math.Cos(animal.GetTheta()) * animal.GetSpeed() * float64(1 / float64(game.Game.TicksPerSecond)) * lol
-			dy := math.Sin(animal.GetTheta()) * animal.GetSpeed() * float64(1 / float64(game.Game.TicksPerSecond)) * lol
+				animal.Update()
+			}
+
+			tickProportion := float64(last.Sub(lastTick)) / float64(tickDuration)
+
+			dx = math.Cos(animal.GetTheta()) * animal.GetSpeed() * float64(1/float64(game.Game.TicksPerSecond)) * tickProportion
+			dy = math.Sin(animal.GetTheta()) * animal.GetSpeed() * float64(1/float64(game.Game.TicksPerSecond)) * tickProportion
+
 			x, y := animal.GetPos()
-			if lol > 0.95 {
-			    fmt.Printf("x: %v, y: %v\n", x+dx, y+dy)
-			}
-
 
 			mat := pixel.IM
-			mat = mat.ScaledXY(pixel.ZV, pixel.V(24, 24))
 			mat = mat.Rotated(pixel.ZV, angle)
-			mat = mat.Moved(pixel.Vec{X: x+dx, Y: y+dy})
+			mat = mat.Moved(pixel.Vec{X: x + dx, Y: y + dy})
 
 			animal.GetSprite().Draw(win, mat)
+
+			for _, papu := range game.Squares {
+				mat := pixel.IM
+				mat = mat.Rotated(pixel.ZV, angle)
+				mat = mat.Moved(pixel.Vec{X: papu.X, Y: papu.Y})
+
+				animal.GetSprite().Draw(win, mat)
+			}
+			game.Squares = make([]pixel.Vec, 0)
 		}
 
+
+		if shouldUpdate {
+			game.PruneDeadAnimals()
+		}
 
 		win.Update()
 	}
